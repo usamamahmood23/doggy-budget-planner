@@ -1,0 +1,338 @@
+/* Storage module — single localStorage namespace, JSON backup/restore, seed data */
+(function (global) {
+  'use strict';
+
+  const STORAGE_KEY = 'dbp_data_v1';
+  const SCHEMA_VERSION = 1;
+
+  const CATEGORIES = ['food', 'vet', 'grooming', 'toys', 'meds', 'other'];
+  const ALLOWED_CURRENCIES = ['USD', 'CAD', 'AUD', 'NZD', 'SGD', 'HKD', 'EUR', 'GBP'];
+  const ALLOWED_THEMES = ['light', 'dark'];
+
+  const DEFAULT_DATA = {
+    version: SCHEMA_VERSION,
+    dog: { name: '', breed: '', ageYears: null, weightKg: null, photo: '' },
+    currency: 'USD',
+    budgets: { food: 0, vet: 0, grooming: 0, toys: 0, meds: 0, other: 0 },
+    expenses: [],
+    goals: [],
+    reminders: [],
+    settings: { theme: 'light', installPromptDismissed: false, seeded: false }
+  };
+
+  function uid() {
+    return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+  }
+
+  function clone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function deepMergeDefaults(target, defaults) {
+    if (target === null || target === undefined) return clone(defaults);
+    if (typeof defaults !== 'object' || Array.isArray(defaults)) return target;
+    const out = { ...defaults, ...target };
+    for (const key of Object.keys(defaults)) {
+      if (defaults[key] && typeof defaults[key] === 'object' && !Array.isArray(defaults[key])) {
+        out[key] = deepMergeDefaults(target[key], defaults[key]);
+      }
+    }
+    return out;
+  }
+
+  // Normalize unsupported legacy values (currency outside whitelist, theme 'auto')
+  function normalize(data) {
+    if (!ALLOWED_CURRENCIES.includes(data.currency)) data.currency = 'USD';
+    if (!ALLOWED_THEMES.includes(data.settings.theme)) data.settings.theme = 'light';
+    return data;
+  }
+
+  let cache = null;
+
+  function isStorageAvailable() {
+    try {
+      const k = '__dbp_probe__';
+      localStorage.setItem(k, '1');
+      localStorage.removeItem(k);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function load() {
+    if (cache) return cache;
+    if (!isStorageAvailable()) {
+      console.warn('localStorage unavailable — running in-memory only');
+      cache = clone(DEFAULT_DATA);
+      return cache;
+    }
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        cache = clone(DEFAULT_DATA);
+        save();
+        return cache;
+      }
+      const parsed = JSON.parse(raw);
+      cache = normalize(deepMergeDefaults(parsed, DEFAULT_DATA));
+      return cache;
+    } catch (e) {
+      console.error('Failed to load storage, resetting', e);
+      cache = clone(DEFAULT_DATA);
+      return cache;
+    }
+  }
+
+  function save() {
+    if (!cache) return false;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+      return true;
+    } catch (e) {
+      console.error('Storage quota exceeded or unavailable', e);
+      try {
+        window.dispatchEvent(new CustomEvent('dbp:storage-error', { detail: { error: e.message } }));
+      } catch (_) {}
+      return false;
+    }
+  }
+
+  function reset() {
+    cache = clone(DEFAULT_DATA);
+    save();
+    return cache;
+  }
+
+  function getAll() {
+    return load();
+  }
+
+  function update(mutator) {
+    const data = load();
+    mutator(data);
+    save();
+    return data;
+  }
+
+  // ---- Expense helpers ----
+  function addExpense(exp) {
+    return update((d) => {
+      d.expenses.unshift({
+        id: uid(),
+        amount: Number(exp.amount) || 0,
+        category: CATEGORIES.includes(exp.category) ? exp.category : 'other',
+        note: String(exp.note || ''),
+        date: exp.date || new Date().toISOString().slice(0, 10),
+        recurring: !!exp.recurring
+      });
+    });
+  }
+
+  function updateExpense(id, patch) {
+    return update((d) => {
+      const i = d.expenses.findIndex((e) => e.id === id);
+      if (i >= 0) {
+        d.expenses[i] = {
+          ...d.expenses[i],
+          ...patch,
+          amount: patch.amount != null ? Number(patch.amount) : d.expenses[i].amount
+        };
+      }
+    });
+  }
+
+  function deleteExpense(id) {
+    return update((d) => {
+      d.expenses = d.expenses.filter((e) => e.id !== id);
+    });
+  }
+
+  // ---- Goal helpers ----
+  function addGoal(goal) {
+    return update((d) => {
+      d.goals.push({
+        id: uid(),
+        name: String(goal.name || ''),
+        target: Number(goal.target) || 0,
+        saved: 0,
+        targetDate: goal.targetDate || '',
+        contributions: []
+      });
+    });
+  }
+
+  function addContribution(goalId, amount, date) {
+    return update((d) => {
+      const g = d.goals.find((x) => x.id === goalId);
+      if (!g) return;
+      const amt = Number(amount) || 0;
+      g.contributions.push({ amount: amt, date: date || new Date().toISOString().slice(0, 10) });
+      g.saved = +(g.saved + amt).toFixed(2);
+    });
+  }
+
+  function deleteGoal(id) {
+    return update((d) => {
+      d.goals = d.goals.filter((g) => g.id !== id);
+    });
+  }
+
+  // ---- Reminder helpers ----
+  function addReminder(r) {
+    return update((d) => {
+      d.reminders.push({
+        id: uid(),
+        title: String(r.title || ''),
+        date: r.date || new Date().toISOString().slice(0, 10),
+        type: ['vet', 'vaccine', 'grooming', 'other'].includes(r.type) ? r.type : 'other',
+        done: false
+      });
+    });
+  }
+
+  function toggleReminder(id) {
+    return update((d) => {
+      const r = d.reminders.find((x) => x.id === id);
+      if (r) r.done = !r.done;
+    });
+  }
+
+  function deleteReminder(id) {
+    return update((d) => {
+      d.reminders = d.reminders.filter((r) => r.id !== id);
+    });
+  }
+
+  // ---- Settings & profile ----
+  function setSettings(patch) {
+    return update((d) => {
+      d.settings = { ...d.settings, ...patch };
+      normalize(d);
+    });
+  }
+
+  function setDog(patch) {
+    return update((d) => {
+      d.dog = { ...d.dog, ...patch };
+    });
+  }
+
+  function setBudgets(patch) {
+    return update((d) => {
+      d.budgets = { ...d.budgets, ...patch };
+    });
+  }
+
+  function setCurrency(code) {
+    return update((d) => {
+      d.currency = ALLOWED_CURRENCIES.includes(code) ? code : 'USD';
+    });
+  }
+
+  // ---- Backup / restore ----
+  function exportJSON() {
+    return JSON.stringify(load(), null, 2);
+  }
+
+  function importJSON(jsonStr) {
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (!parsed || typeof parsed !== 'object') throw new Error('Invalid JSON');
+      const merged = normalize(deepMergeDefaults(parsed, DEFAULT_DATA));
+      cache = merged;
+      save();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  }
+
+  function exportExpensesCSV() {
+    const d = load();
+    const header = ['date', 'category', 'amount', 'note', 'recurring'];
+    const rows = d.expenses.map((e) => [
+      e.date,
+      e.category,
+      e.amount,
+      '"' + String(e.note || '').replace(/"/g, '""') + '"',
+      e.recurring ? 'yes' : 'no'
+    ]);
+    return [header.join(','), ...rows.map((r) => r.join(','))].join('\n');
+  }
+
+  // ---- Seed (one-time on first run) ----
+  function seedIfNeeded() {
+    const d = load();
+    if (d.settings.seeded) return d;
+    const today = new Date();
+    const iso = (offsetDays) => {
+      const x = new Date(today);
+      x.setDate(x.getDate() - offsetDays);
+      return x.toISOString().slice(0, 10);
+    };
+    d.dog = { name: 'Max', breed: 'Golden Retriever', ageYears: 3, weightKg: 28, photo: '' };
+    d.budgets = { food: 80, vet: 60, grooming: 40, toys: 25, meds: 30, other: 25 };
+    d.expenses = [
+      { id: uid(), amount: 24.99, category: 'food', note: 'Premium kibble 5kg', date: iso(2), recurring: false },
+      { id: uid(), amount: 45.00, category: 'vet', note: 'Routine checkup', date: iso(6), recurring: false },
+      { id: uid(), amount: 18.50, category: 'grooming', note: 'Bath & nail trim', date: iso(10), recurring: false },
+      { id: uid(), amount: 9.99, category: 'toys', note: 'Rope chew toy', date: iso(14), recurring: false },
+      { id: uid(), amount: 14.75, category: 'meds', note: 'Tick & flea drops', date: iso(20), recurring: true }
+    ];
+    d.goals = [
+      {
+        id: uid(),
+        name: 'Annual vaccinations fund',
+        target: 240,
+        saved: 90,
+        targetDate: new Date(today.getFullYear(), today.getMonth() + 3, 1).toISOString().slice(0, 10),
+        contributions: [
+          { amount: 50, date: iso(30) },
+          { amount: 40, date: iso(10) }
+        ]
+      }
+    ];
+    const futureDate = (days) => {
+      const x = new Date(today);
+      x.setDate(x.getDate() + days);
+      return x.toISOString().slice(0, 10);
+    };
+    d.reminders = [
+      { id: uid(), title: 'Annual vaccination booster', date: futureDate(14), type: 'vaccine', done: false },
+      { id: uid(), title: 'Grooming appointment', date: futureDate(5), type: 'grooming', done: false }
+    ];
+    d.settings.seeded = true;
+    save();
+    return d;
+  }
+
+  global.DBPStorage = {
+    CATEGORIES,
+    ALLOWED_CURRENCIES,
+    uid,
+    load,
+    save,
+    reset,
+    getAll,
+    update,
+    addExpense,
+    updateExpense,
+    deleteExpense,
+    addGoal,
+    addContribution,
+    deleteGoal,
+    addReminder,
+    toggleReminder,
+    deleteReminder,
+    setSettings,
+    setDog,
+    setBudgets,
+    setCurrency,
+    exportJSON,
+    importJSON,
+    exportExpensesCSV,
+    seedIfNeeded,
+    isStorageAvailable
+  };
+})(window);

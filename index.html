@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d9488" id="meta-theme-color" />
+  <meta name="description" content="Doggy Budget Planner — track pet spending, savings goals, and reminders." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="DoggyBudget" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg" />
+  <link rel="apple-touch-icon" href="icons/icon-192.svg" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <title>Doggy Budget Planner</title>
+</head>
+<body>
+  <!-- Reusable SVG icons -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+      <symbol id="i-expense" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h4"/></symbol>
+      <symbol id="i-savings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
+      <symbol id="i-analytics" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 17h12l-1.5-2V11a4.5 4.5 0 0 0-9 0v4zM10 20h4"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8 1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10-4-4L4 16zM14 6l4 4"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M9 6V4h6v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></symbol>
+    </defs>
+  </svg>
+
+  <!-- Install banner -->
+  <div id="install-banner" class="install-banner hidden" role="region" aria-label="Install app">
+    <div class="install-banner__inner">
+      <div class="install-banner__text">
+        <strong>Install Doggy Budget Planner</strong>
+        <span>Add it to your home screen for offline access.</span>
+      </div>
+      <div class="install-banner__actions">
+        <button class="btn btn-ghost btn-sm" id="install-dismiss" type="button">Not now</button>
+        <button class="btn btn-primary btn-sm" id="install-accept" type="button">Install</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header" role="banner">
+    <div class="app-header__inner">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <h1 class="brand__title">Doggy Budget</h1>
+      </div>
+      <div class="header-actions">
+        <span id="dog-chip" class="dog-chip" aria-label="Selected dog"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast container -->
+  <div id="toast-host" class="toast-host" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Main views container -->
+  <main id="main" class="main" role="main">
+    <!-- DASHBOARD -->
+    <section id="view-dashboard" class="view" data-view="dashboard" aria-labelledby="dashboard-title">
+      <div class="view-head">
+        <h2 id="dashboard-title" class="view-title" data-greeting>Welcome</h2>
+        <p class="view-sub" data-sub>Here's a snapshot of this month.</p>
+      </div>
+
+      <div class="card card-hero">
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="ring__bg" cx="60" cy="60" r="52"></circle>
+            <circle class="ring__fg" id="ring-fg" cx="60" cy="60" r="52"></circle>
+          </svg>
+          <div class="ring__center">
+            <span class="ring__pct" id="ring-pct">0%</span>
+            <span class="ring__label">of budget</span>
+          </div>
+        </div>
+        <div class="hero-stats">
+          <div>
+            <div class="stat-label">Spent this month</div>
+            <div class="stat-value" id="hero-spent">—</div>
+          </div>
+          <div>
+            <div class="stat-label">Monthly budget</div>
+            <div class="stat-value" id="hero-budget">—</div>
+          </div>
+          <div>
+            <div class="stat-label">Remaining</div>
+            <div class="stat-value" id="hero-remaining">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-head"><h3>Categories</h3></div>
+      <div class="card">
+        <div id="category-bars" class="category-bars"></div>
+      </div>
+
+      <div class="section-head"><h3>Savings goals</h3></div>
+      <div id="dashboard-goals" class="goal-grid"></div>
+
+      <div class="section-head"><h3>Upcoming reminders</h3></div>
+      <div id="dashboard-reminders" class="reminder-list"></div>
+
+      <button class="fab" id="fab-add-expense" type="button" aria-label="Add expense">
+        <svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>
+        <span>Add expense</span>
+      </button>
+    </section>
+
+    <!-- EXPENSES -->
+    <section id="view-expenses" class="view hidden" data-view="expenses" aria-labelledby="expenses-title">
+      <div class="view-head">
+        <h2 id="expenses-title" class="view-title">Expenses</h2>
+        <p class="view-sub">Every purchase, tracked.</p>
+      </div>
+
+      <div class="card">
+        <form id="expense-form" class="form-grid" novalidate>
+          <input type="hidden" name="id" />
+          <label class="field">
+            <span>Amount</span>
+            <input type="number" name="amount" step="0.01" min="0" required inputmode="decimal" />
+            <small class="err" data-err="amount"></small>
+          </label>
+          <label class="field">
+            <span>Category</span>
+            <select name="category" required>
+              <option value="food">Food</option>
+              <option value="vet">Vet</option>
+              <option value="grooming">Grooming</option>
+              <option value="toys">Toys</option>
+              <option value="meds">Meds</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Date</span>
+            <input type="date" name="date" required />
+          </label>
+          <label class="field field-wide">
+            <span>Note</span>
+            <input type="text" name="note" maxlength="120" placeholder="Optional note" />
+          </label>
+          <label class="field field-checkbox">
+            <input type="checkbox" name="recurring" />
+            <span>Recurring monthly</span>
+          </label>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" id="expense-cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="expense-submit">Add expense</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="filter-row">
+          <input type="search" id="expense-search" placeholder="Search notes…" aria-label="Search" />
+          <select id="expense-filter-cat" aria-label="Filter by category">
+            <option value="">All categories</option>
+            <option value="food">Food</option>
+            <option value="vet">Vet</option>
+            <option value="grooming">Grooming</option>
+            <option value="toys">Toys</option>
+            <option value="meds">Meds</option>
+            <option value="other">Other</option>
+          </select>
+          <select id="expense-filter-month" aria-label="Filter by month"></select>
+          <select id="expense-sort" aria-label="Sort">
+            <option value="date-desc">Newest first</option>
+            <option value="date-asc">Oldest first</option>
+            <option value="amount-desc">Amount: high → low</option>
+            <option value="amount-asc">Amount: low → high</option>
+          </select>
+        </div>
+        <ul id="expense-list" class="expense-list"></ul>
+      </div>
+    </section>
+
+    <!-- SAVINGS -->
+    <section id="view-savings" class="view hidden" data-view="savings" aria-labelledby="savings-title">
+      <div class="view-head">
+        <h2 id="savings-title" class="view-title">Savings goals</h2>
+        <p class="view-sub">Set a target, save toward it.</p>
+      </div>
+
+      <div class="card">
+        <form id="goal-form" class="form-grid" novalidate>
+          <label class="field field-wide">
+            <span>Goal name</span>
+            <input type="text" name="name" maxlength="60" required placeholder="e.g. Yearly vet fund" />
+            <small class="err" data-err="name"></small>
+          </label>
+          <label class="field">
+            <span>Target amount</span>
+            <input type="number" name="target" min="1" step="0.01" required inputmode="decimal" />
+            <small class="err" data-err="target"></small>
+          </label>
+          <label class="field">
+            <span>Target date (optional)</span>
+            <input type="date" name="targetDate" />
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create goal</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="goal-list" class="goal-grid"></div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section id="view-analytics" class="view hidden" data-view="analytics" aria-labelledby="analytics-title">
+      <div class="view-head">
+        <h2 id="analytics-title" class="view-title">Analytics</h2>
+        <p class="view-sub">Patterns in your pup's spending.</p>
+      </div>
+
+      <div class="card">
+        <div class="chart-head">
+          <h3>Spending by category</h3>
+          <select id="analytics-month" aria-label="Analytics month"></select>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-category"></canvas></div>
+        <p id="chart-category-empty" class="empty hidden">No expenses for this month yet.</p>
+      </div>
+
+      <div class="card">
+        <div class="chart-head"><h3>Monthly spend (last 6 months)</h3></div>
+        <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="chart-head"><h3>This month vs last month</h3></div>
+        <div class="chart-wrap"><canvas id="chart-mom"></canvas></div>
+      </div>
+    </section>
+
+    <!-- REMINDERS -->
+    <section id="view-reminders" class="view hidden" data-view="reminders" aria-labelledby="reminders-title">
+      <div class="view-head">
+        <h2 id="reminders-title" class="view-title">Reminders</h2>
+        <p class="view-sub">Vaccines, vet visits, groom days.</p>
+      </div>
+
+      <div class="card">
+        <form id="reminder-form" class="form-grid" novalidate>
+          <label class="field field-wide">
+            <span>Title</span>
+            <input type="text" name="title" maxlength="80" required placeholder="e.g. Rabies booster" />
+            <small class="err" data-err="title"></small>
+          </label>
+          <label class="field">
+            <span>Date</span>
+            <input type="date" name="date" required />
+          </label>
+          <label class="field">
+            <span>Type</span>
+            <select name="type">
+              <option value="vet">Vet</option>
+              <option value="vaccine">Vaccine</option>
+              <option value="grooming">Grooming</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Add reminder</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="reminder-toolbar">
+          <button class="btn btn-ghost btn-sm" id="enable-notifications" type="button">Enable notifications</button>
+          <span id="notif-status" class="muted"></span>
+        </div>
+        <ul id="reminder-list" class="reminder-list"></ul>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="view hidden" data-view="settings" aria-labelledby="settings-title">
+      <div class="view-head">
+        <h2 id="settings-title" class="view-title">Settings</h2>
+        <p class="view-sub">Make it yours.</p>
+      </div>
+
+      <div class="card">
+        <h3>Dog profile</h3>
+        <form id="dog-form" class="form-grid" novalidate>
+          <label class="field">
+            <span>Name</span>
+            <input type="text" name="name" maxlength="40" placeholder="e.g. Max" />
+          </label>
+          <label class="field">
+            <span>Breed</span>
+            <input type="text" name="breed" maxlength="40" placeholder="e.g. Golden Retriever" />
+          </label>
+          <label class="field">
+            <span>Age (years)</span>
+            <input type="number" name="ageYears" min="0" max="30" step="0.1" />
+          </label>
+          <label class="field">
+            <span>Weight (kg)</span>
+            <input type="number" name="weightKg" min="0" max="100" step="0.1" />
+          </label>
+          <label class="field field-wide">
+            <span>Photo</span>
+            <input type="file" name="photo" accept="image/*" id="dog-photo" />
+            <small class="muted">Resized and stored locally.</small>
+          </label>
+          <div class="dog-photo-preview" id="dog-photo-preview"></div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save profile</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Monthly budget</h3>
+        <form id="budget-form" class="form-grid budget-grid" novalidate>
+          <label class="field"><span>Food</span><input type="number" name="food" min="0" step="0.01" /></label>
+          <label class="field"><span>Vet</span><input type="number" name="vet" min="0" step="0.01" /></label>
+          <label class="field"><span>Grooming</span><input type="number" name="grooming" min="0" step="0.01" /></label>
+          <label class="field"><span>Toys</span><input type="number" name="toys" min="0" step="0.01" /></label>
+          <label class="field"><span>Meds</span><input type="number" name="meds" min="0" step="0.01" /></label>
+          <label class="field"><span>Other</span><input type="number" name="other" min="0" step="0.01" /></label>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save budgets</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Currency</h3>
+        <label class="field">
+          <span>Display currency</span>
+          <select id="currency-select">
+            <option value="USD">USD — $ — United States dollar</option>
+            <option value="CAD">CAD — $ — Canadian dollar</option>
+            <option value="AUD">AUD — $ — Australian dollar</option>
+            <option value="NZD">NZD — $ — New Zealand dollar</option>
+            <option value="SGD">SGD — $ — Singapore dollar</option>
+            <option value="HKD">HKD — $ — Hong Kong dollar</option>
+            <option value="EUR">EUR — € — Euro</option>
+            <option value="GBP">GBP — £ — British pound</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="card">
+        <h3>Theme</h3>
+        <div class="theme-row" role="radiogroup" aria-label="Theme">
+          <label class="chip-radio"><input type="radio" name="theme" value="light" /><span>Light</span></label>
+          <label class="chip-radio"><input type="radio" name="theme" value="dark" /><span>Dark</span></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Data</h3>
+        <div class="data-actions">
+          <button class="btn btn-ghost" id="btn-export-json" type="button">Export backup (JSON)</button>
+          <label class="btn btn-ghost" for="import-json-input">Import backup</label>
+          <input type="file" id="import-json-input" accept="application/json" hidden />
+          <button class="btn btn-ghost" id="btn-export-csv" type="button">Export expenses (CSV)</button>
+          <button class="btn btn-danger" id="btn-reset" type="button">Reset all data</button>
+        </div>
+      </div>
+
+      <p class="version-note">Doggy Budget Planner · v1.0</p>
+    </section>
+  </main>
+
+  <!-- Bottom navigation -->
+  <nav class="bottom-nav" role="navigation" aria-label="Primary">
+    <button class="nav-btn" data-nav="dashboard" aria-label="Dashboard">
+      <svg class="nav-ic" aria-hidden="true"><use href="#i-home"/></svg>
+      <span class="nav-lbl">Home</span>
+    </button>
+    <button class="nav-btn" data-nav="expenses" aria-label="Expenses">
+      <svg class="nav-ic" aria-hidden="true"><use href="#i-expense"/></svg>
+      <span class="nav-lbl">Expenses</span>
+    </button>
+    <button class="nav-btn" data-nav="savings" aria-label="Savings">
+      <svg class="nav-ic" aria-hidden="true"><use href="#i-savings"/></svg>
+      <span class="nav-lbl">Savings</span>
+    </button>
+    <button class="nav-btn" data-nav="analytics" aria-label="Analytics">
+      <svg class="nav-ic" aria-hidden="true"><use href="#i-analytics"/></svg>
+      <span class="nav-lbl">Analytics</span>
+    </button>
+    <button class="nav-btn" data-nav="reminders" aria-label="Reminders">
+      <svg class="nav-ic" aria-hidden="true"><use href="#i-bell"/></svg>
+      <span class="nav-lbl">Reminders</span>
+    </button>
+    <button class="nav-btn" data-nav="settings" aria-label="Settings">
+      <svg class="nav-ic" aria-hidden="true"><use href="#i-settings"/></svg>
+      <span class="nav-lbl">Settings</span>
+    </button>
+  </nav>
+
+  <!-- Confetti canvas -->
+  <canvas id="confetti" class="confetti-canvas" aria-hidden="true"></canvas>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+  <script src="js/storage.js" defer></script>
+  <script src="js/charts.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>
