@@ -3,7 +3,7 @@
    - cache-first for shell
    - stale-while-revalidate for Chart.js CDN
 */
-const CACHE = 'dbp-cache-v2';
+const CACHE = 'dbp-cache-v3';
 const SHELL = [
   './',
   'index.html',

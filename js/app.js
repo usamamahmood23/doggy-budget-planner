@@ -94,7 +94,6 @@
       case 'expenses': renderExpenses(); break;
       case 'savings': renderSavings(); break;
       case 'analytics': renderAnalytics(); break;
-      case 'reminders': renderReminders(); break;
       case 'settings': renderSettings(); break;
     }
   }
@@ -165,15 +164,6 @@
       goalHost.innerHTML = `<p class="empty">No savings goals yet — create one in the Savings tab.</p>`;
     } else {
       goalHost.innerHTML = data.goals.slice(0, 4).map((g) => goalCardHTML(g, false)).join('');
-    }
-
-    // Reminders
-    const remHost = $('#dashboard-reminders');
-    const upcoming = data.reminders.filter((r) => !r.done).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 2);
-    if (upcoming.length === 0) {
-      remHost.innerHTML = `<p class="empty">No upcoming reminders.</p>`;
-    } else {
-      remHost.innerHTML = upcoming.map(reminderItemHTML).join('');
     }
 
     renderDogChip();
@@ -503,132 +493,6 @@
     ], formatCurrency);
   }
 
-  // -------- Reminders --------
-  function renderReminders() {
-    const form = $('#reminder-form');
-    if (!form.dataset.bound) {
-      form.dataset.bound = '1';
-      form.addEventListener('submit', onReminderSubmit);
-      $('#enable-notifications').addEventListener('click', requestNotificationPermission);
-    }
-    if (!form.querySelector('[name="date"]').value) {
-      form.querySelector('[name="date"]').value = todayISO();
-    }
-    updateNotifStatus();
-    renderReminderList();
-  }
-
-  function reminderItemHTML(r) {
-    const days = daysUntil(r.date);
-    const overdue = !r.done && days < 0;
-    const dateStr = new Date(r.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-    return `
-      <li class="reminder-item ${overdue ? 'overdue' : ''} ${r.done ? 'done' : ''}">
-        <input type="checkbox" ${r.done ? 'checked' : ''} data-rem-toggle="${r.id}" aria-label="Mark done" />
-        <span class="reminder-item__type">${escapeHtml(r.type)}</span>
-        <span class="reminder-item__title">${escapeHtml(r.title)}</span>
-        <span class="reminder-item__date">${dateStr}${overdue ? ' · overdue' : ''}</span>
-        <button class="icon-btn" data-rem-del="${r.id}" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
-      </li>`;
-  }
-
-  function renderReminderList() {
-    const list = $('#reminder-list');
-    const data = S.getAll();
-    const items = data.reminders.slice().sort((a, b) => a.date.localeCompare(b.date));
-    if (items.length === 0) {
-      list.innerHTML = `<li class="empty">No reminders yet — add one above.</li>`;
-      return;
-    }
-    list.innerHTML = items.map(reminderItemHTML).join('');
-    list.querySelectorAll('[data-rem-toggle]').forEach((b) => b.addEventListener('change', () => {
-      S.toggleReminder(b.dataset.remToggle);
-      renderReminderList();
-      if (currentView === 'dashboard') renderDashboard();
-    }));
-    list.querySelectorAll('[data-rem-del]').forEach((b) => b.addEventListener('click', () => {
-      if (!confirm('Delete this reminder?')) return;
-      S.deleteReminder(b.dataset.remDel);
-      renderReminderList();
-      if (currentView === 'dashboard') renderDashboard();
-    }));
-  }
-
-  function onReminderSubmit(ev) {
-    ev.preventDefault();
-    const form = ev.currentTarget;
-    const fd = new FormData(form);
-    const title = (fd.get('title') || '').toString().trim();
-    const date = fd.get('date');
-    const type = fd.get('type');
-    clearErrors(form);
-    let ok = true;
-    if (!title) { setError(form, 'title', 'Title is required'); ok = false; }
-    if (!date) { setError(form, 'date', 'Date is required'); ok = false; }
-    if (!ok) return;
-
-    S.addReminder({ title, date, type });
-    toast('Reminder added', 'success');
-    form.reset();
-    form.querySelector('[name="date"]').value = todayISO();
-    renderReminderList();
-    scheduleNotificationsIfReady();
-    if (currentView === 'dashboard') renderDashboard();
-  }
-
-  function updateNotifStatus() {
-    const el = $('#notif-status');
-    const btn = $('#enable-notifications');
-    if (!('Notification' in window)) {
-      el.textContent = 'Notifications not supported on this device';
-      btn.disabled = true;
-      return;
-    }
-    if (Notification.permission === 'granted') {
-      el.textContent = 'Notifications enabled';
-      btn.disabled = true;
-    } else if (Notification.permission === 'denied') {
-      el.textContent = 'Notifications blocked. Enable in browser settings.';
-      btn.disabled = true;
-    } else {
-      el.textContent = '';
-      btn.disabled = false;
-    }
-  }
-
-  function requestNotificationPermission() {
-    if (!('Notification' in window)) return;
-    Notification.requestPermission().then((perm) => {
-      updateNotifStatus();
-      if (perm === 'granted') {
-        toast('Notifications enabled', 'success');
-        scheduleNotificationsIfReady();
-      } else {
-        toast('Notifications not enabled', 'error');
-      }
-    });
-  }
-
-  let scheduledTimers = [];
-  function scheduleNotificationsIfReady() {
-    scheduledTimers.forEach((t) => clearTimeout(t));
-    scheduledTimers = [];
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    const reminders = S.getAll().reminders.filter((r) => !r.done);
-    reminders.forEach((r) => {
-      const target = new Date(r.date + 'T09:00:00').getTime();
-      const delta = target - Date.now();
-      if (delta > 0 && delta < 24 * 60 * 60 * 1000) {
-        const t = setTimeout(() => {
-          try {
-            new Notification('Doggy Budget reminder', { body: r.title, icon: 'icons/icon-192.svg' });
-          } catch (_) {}
-        }, delta);
-        scheduledTimers.push(t);
-      }
-    });
-  }
-
   // -------- Settings --------
   function renderSettings() {
     const data = S.getAll();
@@ -897,8 +761,14 @@
     setupInstallBanner();
     registerSW();
 
-    navigate('dashboard');
-    scheduleNotificationsIfReady();
+    // Old #reminders URLs (or any unknown view) → dashboard
+    const validViews = ['dashboard', 'expenses', 'savings', 'analytics', 'settings'];
+    const hash = (location.hash || '').replace('#', '');
+    const initialView = validViews.includes(hash) ? hash : 'dashboard';
+    if (hash && !validViews.includes(hash)) {
+      try { history.replaceState(null, '', '#dashboard'); } catch (_) {}
+    }
+    navigate(initialView);
   }
 
   if (document.readyState === 'loading') {

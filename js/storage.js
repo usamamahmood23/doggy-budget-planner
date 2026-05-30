@@ -16,7 +16,6 @@
     budgets: { food: 0, vet: 0, grooming: 0, toys: 0, meds: 0, other: 0 },
     expenses: [],
     goals: [],
-    reminders: [],
     settings: { theme: 'light', installPromptDismissed: false, seeded: false }
   };
 
@@ -41,9 +40,11 @@
   }
 
   // Normalize unsupported legacy values (currency outside whitelist, theme 'auto')
+  // and silently drop removed fields (e.g. legacy `reminders` array).
   function normalize(data) {
     if (!ALLOWED_CURRENCIES.includes(data.currency)) data.currency = 'USD';
     if (!ALLOWED_THEMES.includes(data.settings.theme)) data.settings.theme = 'light';
+    if ('reminders' in data) delete data.reminders;
     return data;
   }
 
@@ -178,32 +179,6 @@
     });
   }
 
-  // ---- Reminder helpers ----
-  function addReminder(r) {
-    return update((d) => {
-      d.reminders.push({
-        id: uid(),
-        title: String(r.title || ''),
-        date: r.date || new Date().toISOString().slice(0, 10),
-        type: ['vet', 'vaccine', 'grooming', 'other'].includes(r.type) ? r.type : 'other',
-        done: false
-      });
-    });
-  }
-
-  function toggleReminder(id) {
-    return update((d) => {
-      const r = d.reminders.find((x) => x.id === id);
-      if (r) r.done = !r.done;
-    });
-  }
-
-  function deleteReminder(id) {
-    return update((d) => {
-      d.reminders = d.reminders.filter((r) => r.id !== id);
-    });
-  }
-
   // ---- Settings & profile ----
   function setSettings(patch) {
     return update((d) => {
@@ -293,15 +268,6 @@
         ]
       }
     ];
-    const futureDate = (days) => {
-      const x = new Date(today);
-      x.setDate(x.getDate() + days);
-      return x.toISOString().slice(0, 10);
-    };
-    d.reminders = [
-      { id: uid(), title: 'Annual vaccination booster', date: futureDate(14), type: 'vaccine', done: false },
-      { id: uid(), title: 'Grooming appointment', date: futureDate(5), type: 'grooming', done: false }
-    ];
     d.settings.seeded = true;
     save();
     return d;
@@ -322,9 +288,6 @@
     addGoal,
     addContribution,
     deleteGoal,
-    addReminder,
-    toggleReminder,
-    deleteReminder,
     setSettings,
     setDog,
     setBudgets,

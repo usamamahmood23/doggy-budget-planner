@@ -22,7 +22,6 @@
       <symbol id="i-expense" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h4"/></symbol>
       <symbol id="i-savings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
       <symbol id="i-analytics" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></symbol>
-      <symbol id="i-bell" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 17h12l-1.5-2V11a4.5 4.5 0 0 0-9 0v4zM10 20h4"/></symbol>
       <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8 1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
       <symbol id="i-plus" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
       <symbol id="i-edit" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10-4-4L4 16zM14 6l4 4"/></symbol>
@@ -103,9 +102,6 @@
 
       <div class="section-head"><h3>Savings goals</h3></div>
       <div id="dashboard-goals" class="goal-grid"></div>
-
-      <div class="section-head"><h3>Upcoming reminders</h3></div>
-      <div id="dashboard-reminders" class="reminder-list"></div>
 
       <button class="fab" id="fab-add-expense" type="button" aria-label="Add expense">
         <svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>
@@ -241,48 +237,6 @@
       </div>
     </section>
 
-    <!-- REMINDERS -->
-    <section id="view-reminders" class="view hidden" data-view="reminders" aria-labelledby="reminders-title">
-      <div class="view-head">
-        <h2 id="reminders-title" class="view-title">Reminders</h2>
-        <p class="view-sub">Vaccines, vet visits, groom days.</p>
-      </div>
-
-      <div class="card">
-        <form id="reminder-form" class="form-grid" novalidate>
-          <label class="field field-wide">
-            <span>Title</span>
-            <input type="text" name="title" maxlength="80" required placeholder="e.g. Rabies booster" />
-            <small class="err" data-err="title"></small>
-          </label>
-          <label class="field">
-            <span>Date</span>
-            <input type="date" name="date" required />
-          </label>
-          <label class="field">
-            <span>Type</span>
-            <select name="type">
-              <option value="vet">Vet</option>
-              <option value="vaccine">Vaccine</option>
-              <option value="grooming">Grooming</option>
-              <option value="other">Other</option>
-            </select>
-          </label>
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Add reminder</button>
-          </div>
-        </form>
-      </div>
-
-      <div class="card">
-        <div class="reminder-toolbar">
-          <button class="btn btn-ghost btn-sm" id="enable-notifications" type="button">Enable notifications</button>
-          <span id="notif-status" class="muted"></span>
-        </div>
-        <ul id="reminder-list" class="reminder-list"></ul>
-      </div>
-    </section>
-
     <!-- SETTINGS -->
     <section id="view-settings" class="view hidden" data-view="settings" aria-labelledby="settings-title">
       <div class="view-head">
@@ -393,10 +347,6 @@
     <button class="nav-btn" data-nav="analytics" aria-label="Analytics">
       <svg class="nav-ic" aria-hidden="true"><use href="#i-analytics"/></svg>
       <span class="nav-lbl">Analytics</span>
-    </button>
-    <button class="nav-btn" data-nav="reminders" aria-label="Reminders">
-      <svg class="nav-ic" aria-hidden="true"><use href="#i-bell"/></svg>
-      <span class="nav-lbl">Reminders</span>
     </button>
     <button class="nav-btn" data-nav="settings" aria-label="Settings">
       <svg class="nav-ic" aria-hidden="true"><use href="#i-settings"/></svg>
