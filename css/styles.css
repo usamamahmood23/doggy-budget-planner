@@ -238,6 +238,22 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .ring__pct { font-size: 1.25rem; font-weight: 500; color: var(--text); }
 .ring__label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+/* Empty-state CTA shown instead of the ring when no budget is configured */
+.ring-empty {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 4px 0;
+}
+.ring-empty__msg {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
 .hero-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1 1 200px; min-width: 0; }
 .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px; }
 .stat-value { font-size: 1.05rem; font-weight: 500; color: var(--text); letter-spacing: -0.01em; }
@@ -539,6 +555,20 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .chart-wrap canvas { max-width: 100%; }
 .chart-head { flex-wrap: wrap; }
+/* "No data yet" overlay centered inside chart-wrap */
+.chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-align: center;
+  padding: 0 16px;
+}
 
 /* ---- Empty states ---- */
 .empty {

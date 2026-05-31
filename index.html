@@ -8,10 +8,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="DoggyBudget" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg" />
-  <link rel="apple-touch-icon" href="icons/icon-192.svg" />
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="manifest" href="manifest.json?v=5" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="css/styles.css?v=5" />
   <title>Doggy Budget Planner</title>
 </head>
 <body>
@@ -69,7 +71,7 @@
       </div>
 
       <div class="card card-hero">
-        <div class="ring-wrap">
+        <div class="ring-wrap" id="ring-wrap">
           <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
             <circle class="ring__bg" cx="60" cy="60" r="52"></circle>
             <circle class="ring__fg" id="ring-fg" cx="60" cy="60" r="52"></circle>
@@ -78,6 +80,10 @@
             <span class="ring__pct" id="ring-pct">0%</span>
             <span class="ring__label">of budget</span>
           </div>
+        </div>
+        <div class="ring-empty hidden" id="ring-empty">
+          <p class="ring-empty__msg">Set a monthly budget in Settings to track your spending.</p>
+          <button type="button" class="btn btn-ghost btn-sm" data-go="settings-budgets">Set monthly budget →</button>
         </div>
         <div class="hero-stats">
           <div>
@@ -222,18 +228,26 @@
           <h3>Spending by category</h3>
           <select id="analytics-month" aria-label="Analytics month"></select>
         </div>
-        <div class="chart-wrap"><canvas id="chart-category"></canvas></div>
-        <p id="chart-category-empty" class="empty hidden">No expenses for this month yet.</p>
+        <div class="chart-wrap">
+          <canvas id="chart-category"></canvas>
+          <div id="chart-category-empty" class="chart-empty hidden">No data yet</div>
+        </div>
       </div>
 
       <div class="card">
         <div class="chart-head"><h3>Monthly spend (last 6 months)</h3></div>
-        <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
+        <div class="chart-wrap">
+          <canvas id="chart-monthly"></canvas>
+          <div id="chart-monthly-empty" class="chart-empty hidden">No data yet</div>
+        </div>
       </div>
 
       <div class="card">
         <div class="chart-head"><h3>This month vs last month</h3></div>
-        <div class="chart-wrap"><canvas id="chart-mom"></canvas></div>
+        <div class="chart-wrap">
+          <canvas id="chart-mom"></canvas>
+          <div id="chart-mom-empty" class="chart-empty hidden">No data yet</div>
+        </div>
       </div>
     </section>
 
@@ -249,19 +263,19 @@
         <form id="dog-form" class="form-grid" novalidate>
           <label class="field">
             <span>Name</span>
-            <input type="text" name="name" maxlength="40" placeholder="e.g. Max" />
+            <input type="text" name="name" maxlength="40" placeholder="Your dog's name" />
           </label>
           <label class="field">
             <span>Breed</span>
-            <input type="text" name="breed" maxlength="40" placeholder="e.g. Golden Retriever" />
+            <input type="text" name="breed" maxlength="40" placeholder="Breed" />
           </label>
           <label class="field">
             <span>Age (years)</span>
-            <input type="number" name="ageYears" min="0" max="30" step="0.1" />
+            <input type="number" name="ageYears" min="0" max="30" step="0.1" placeholder="Age" />
           </label>
           <label class="field">
             <span>Weight (kg)</span>
-            <input type="number" name="weightKg" min="0" max="100" step="0.1" />
+            <input type="number" name="weightKg" min="0" max="100" step="0.1" placeholder="Weight" />
           </label>
           <label class="field field-wide">
             <span>Photo</span>
@@ -359,8 +373,8 @@
 
   <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
-  <script src="js/storage.js" defer></script>
-  <script src="js/charts.js" defer></script>
-  <script src="js/app.js" defer></script>
+  <script src="js/storage.js?v=5" defer></script>
+  <script src="js/charts.js?v=5" defer></script>
+  <script src="js/app.js?v=5" defer></script>
 </body>
 </html>

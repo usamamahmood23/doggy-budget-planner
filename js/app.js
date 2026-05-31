@@ -119,28 +119,45 @@
     const totalSpent = monthExp.reduce((s, e) => s + Number(e.amount || 0), 0);
     const totalBudget = Object.values(data.budgets).reduce((s, v) => s + Number(v || 0), 0);
     const pct = totalBudget > 0 ? Math.min(100, (totalSpent / totalBudget) * 100) : 0;
+    const hasBudget = totalBudget > 0;
 
     // Greeting
-    const name = data.dog.name || 'friend';
-    document.querySelector('[data-greeting]').textContent = `Saving for ${name}`;
-    document.querySelector('[data-sub]').textContent = `Here's how this month is going.`;
+    const greetEl = document.querySelector('[data-greeting]');
+    const subEl = document.querySelector('[data-sub]');
+    if (data.dog.name) {
+      greetEl.textContent = `Saving for ${data.dog.name}`;
+      subEl.textContent = `Here's how this month is going.`;
+    } else {
+      greetEl.textContent = 'Welcome';
+      subEl.textContent = 'Set up your dog’s profile in Settings to get started.';
+    }
 
-    // Ring
-    const ringFg = $('#ring-fg');
-    const C_LEN = 2 * Math.PI * 52;
-    ringFg.style.strokeDashoffset = String(C_LEN - (C_LEN * Math.min(100, totalBudget ? (totalSpent / totalBudget) * 100 : 0)) / 100);
-    ringFg.classList.toggle('warn', pct >= 80 && pct < 100);
-    ringFg.classList.toggle('over', pct >= 100 && totalBudget > 0);
-    $('#ring-pct').textContent = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) + '%' : '—';
+    // Ring / hero — swap to empty-state CTA when no budget is configured.
+    const ringWrap = $('#ring-wrap');
+    const ringEmpty = $('#ring-empty');
+    if (hasBudget) {
+      ringWrap.classList.remove('hidden');
+      ringEmpty.classList.add('hidden');
+      const ringFg = $('#ring-fg');
+      const C_LEN = 2 * Math.PI * 52;
+      ringFg.style.strokeDashoffset = String(C_LEN - (C_LEN * pct) / 100);
+      ringFg.classList.toggle('warn', pct >= 80 && pct < 100);
+      ringFg.classList.toggle('over', pct >= 100);
+      $('#ring-pct').textContent = Math.round(pct) + '%';
+    } else {
+      ringWrap.classList.add('hidden');
+      ringEmpty.classList.remove('hidden');
+    }
 
+    // Hero stats — always render as formatted currency (never em-dashes).
     $('#hero-spent').textContent = formatCurrency(totalSpent);
-    $('#hero-budget').textContent = totalBudget > 0 ? formatCurrency(totalBudget) : 'Not set';
-    $('#hero-remaining').textContent = totalBudget > 0 ? formatCurrency(Math.max(0, totalBudget - totalSpent)) : '—';
+    $('#hero-budget').textContent = formatCurrency(totalBudget);
+    $('#hero-remaining').textContent = formatCurrency(Math.max(0, totalBudget - totalSpent));
 
     // Category bars
     const wrap = $('#category-bars');
-    if (!totalBudget && monthExp.length === 0) {
-      wrap.innerHTML = `<p class="empty">Set monthly budgets in Settings to see progress.</p>`;
+    if (!hasBudget && monthExp.length === 0) {
+      wrap.innerHTML = `<p class="empty">No spending yet — tap + to add your first expense.</p>`;
     } else {
       wrap.innerHTML = Object.keys(CAT_META).map((cat) => {
         const spent = monthExp.filter((e) => e.category === cat).reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -151,7 +168,7 @@
           <div class="cat-row">
             <div class="cat-row__top">
               <span class="cat-row__label"><span class="cat-dot ${cat}"></span>${CAT_META[cat].label}</span>
-              <span class="cat-row__values">${formatCurrency(spent)} / ${budget ? formatCurrency(budget) : '—'}</span>
+              <span class="cat-row__values">${formatCurrency(spent)} / ${formatCurrency(budget)}</span>
             </div>
             <div class="bar-track"><div class="bar-fill ${cls}" style="width:${Math.min(100, p)}%"></div></div>
           </div>`;
@@ -161,7 +178,7 @@
     // Goals
     const goalHost = $('#dashboard-goals');
     if (data.goals.length === 0) {
-      goalHost.innerHTML = `<p class="empty">No savings goals yet — create one in the Savings tab.</p>`;
+      goalHost.innerHTML = `<p class="empty">No savings goals yet — create one on the Savings screen.</p>`;
     } else {
       goalHost.innerHTML = data.goals.slice(0, 4).map((g) => goalCardHTML(g, false)).join('');
     }
@@ -219,7 +236,7 @@
     });
 
     if (items.length === 0) {
-      list.innerHTML = `<li class="empty">No expenses yet — add your first one.</li>`;
+      list.innerHTML = `<li class="empty">No expenses yet. Tap + Add expense to log your first one.</li>`;
       return;
     }
     list.innerHTML = items.map(expenseItemHTML).join('');
@@ -320,7 +337,7 @@
     const data = S.getAll();
     const host = $('#goal-list');
     if (data.goals.length === 0) {
-      host.innerHTML = `<p class="empty">No goals yet — create one above to start saving.</p>`;
+      host.innerHTML = `<p class="empty">No savings goals yet. Create your first goal above.</p>`;
       return;
     }
     host.innerHTML = data.goals.map((g) => goalCardHTML(g, true)).join('');
@@ -444,6 +461,16 @@
   }
 
   // -------- Analytics --------
+  function toggleChartEmpty(canvas, emptyEl, hasData) {
+    if (hasData) {
+      canvas.classList.remove('hidden');
+      emptyEl.classList.add('hidden');
+    } else {
+      canvas.classList.add('hidden');
+      emptyEl.classList.remove('hidden');
+    }
+  }
+
   function renderAnalytics() {
     const data = S.getAll();
     const monthSel = $('#analytics-month');
@@ -462,12 +489,14 @@
     data.expenses.filter((e) => e.date.startsWith(cur)).forEach((e) => {
       byCat[e.category] = (byCat[e.category] || 0) + Number(e.amount || 0);
     });
-    const hasAny = Object.values(byCat).some((v) => v > 0);
-    $('#chart-category-empty').classList.toggle('hidden', hasAny);
-    if (hasAny) {
+    const hasCatData = Object.values(byCat).some((v) => v > 0);
+    toggleChartEmpty($('#chart-category'), $('#chart-category-empty'), hasCatData);
+    if (hasCatData) {
       const filtered = {};
       Object.keys(byCat).forEach((k) => { if (byCat[k] > 0) filtered[k] = byCat[k]; });
       C.renderCategory($('#chart-category'), filtered, formatCurrency);
+    } else if (C.destroy) {
+      C.destroy('category');
     }
 
     // monthly (last 6)
@@ -479,7 +508,10 @@
       const total = data.expenses.filter((e) => e.date.startsWith(ym)).reduce((s, e) => s + Number(e.amount || 0), 0);
       points.push({ label: monthLabel(ym), total: +total.toFixed(2), ym });
     }
-    C.renderMonthly($('#chart-monthly'), points, formatCurrency);
+    const hasMonthlyData = points.some((p) => p.total > 0);
+    toggleChartEmpty($('#chart-monthly'), $('#chart-monthly-empty'), hasMonthlyData);
+    if (hasMonthlyData) C.renderMonthly($('#chart-monthly'), points, formatCurrency);
+    else if (C.destroy) C.destroy('monthly');
 
     // mom
     const ymThis = thisMonth();
@@ -487,10 +519,16 @@
     const ymPrev = dPrev.toISOString().slice(0, 7);
     const totalThis = data.expenses.filter((e) => e.date.startsWith(ymThis)).reduce((s, e) => s + Number(e.amount || 0), 0);
     const totalPrev = data.expenses.filter((e) => e.date.startsWith(ymPrev)).reduce((s, e) => s + Number(e.amount || 0), 0);
-    C.renderMoM($('#chart-mom'), [
-      { label: monthLabel(ymPrev), total: +totalPrev.toFixed(2) },
-      { label: monthLabel(ymThis), total: +totalThis.toFixed(2) }
-    ], formatCurrency);
+    const hasMoMData = totalThis > 0 || totalPrev > 0;
+    toggleChartEmpty($('#chart-mom'), $('#chart-mom-empty'), hasMoMData);
+    if (hasMoMData) {
+      C.renderMoM($('#chart-mom'), [
+        { label: monthLabel(ymPrev), total: +totalPrev.toFixed(2) },
+        { label: monthLabel(ymThis), total: +totalThis.toFixed(2) }
+      ], formatCurrency);
+    } else if (C.destroy) {
+      C.destroy('mom');
+    }
   }
 
   // -------- Settings --------
@@ -516,7 +554,8 @@
     }
     Object.keys(CAT_META).forEach((cat) => {
       const el = budgetForm.querySelector(`[name="${cat}"]`);
-      if (el) el.value = data.budgets[cat] || '';
+      // Show literal 0 (not blank) when no budget is set — fields are still editable.
+      if (el) el.value = Number(data.budgets[cat] || 0);
     });
 
     const curSel = $('#currency-select');
@@ -739,7 +778,6 @@
     if (!S.isStorageAvailable()) {
       toast('Storage unavailable — data will not persist', 'error');
     }
-    S.seedIfNeeded();
     initTheme();
     renderDogChip();
 
@@ -751,6 +789,16 @@
       setTimeout(() => {
         const el = $('#expense-form [name="amount"]');
         if (el) el.focus();
+      }, 200);
+    });
+    // Empty-state CTAs that link into Settings → Budget section
+    document.addEventListener('click', (e) => {
+      const t = e.target.closest('[data-go="settings-budgets"]');
+      if (!t) return;
+      navigate('settings');
+      setTimeout(() => {
+        const el = $('#budget-form [name="food"]');
+        if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
       }, 200);
     });
 

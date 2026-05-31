@@ -3,20 +3,19 @@
   'use strict';
 
   const STORAGE_KEY = 'dbp_data_v1';
-  const SCHEMA_VERSION = 1;
 
   const CATEGORIES = ['food', 'vet', 'grooming', 'toys', 'meds', 'other'];
   const ALLOWED_CURRENCIES = ['USD', 'CAD', 'AUD', 'NZD', 'SGD', 'HKD', 'EUR', 'GBP'];
   const ALLOWED_THEMES = ['light', 'dark'];
 
+  // Exact shape for fresh installs — no seed values, no internal flags.
   const DEFAULT_DATA = {
-    version: SCHEMA_VERSION,
     dog: { name: '', breed: '', ageYears: null, weightKg: null, photo: '' },
     currency: 'USD',
     budgets: { food: 0, vet: 0, grooming: 0, toys: 0, meds: 0, other: 0 },
     expenses: [],
     goals: [],
-    settings: { theme: 'light', installPromptDismissed: false, seeded: false }
+    settings: { theme: 'light', installPromptDismissed: false }
   };
 
   function uid() {
@@ -41,11 +40,13 @@
 
   // Normalize unsupported legacy values (currency outside whitelist, theme 'auto')
   // and silently drop removed fields (e.g. legacy `reminders` array).
+  // Returns true if any migration actually changed the data (so callers can persist).
   function normalize(data) {
-    if (!ALLOWED_CURRENCIES.includes(data.currency)) data.currency = 'USD';
-    if (!ALLOWED_THEMES.includes(data.settings.theme)) data.settings.theme = 'light';
-    if ('reminders' in data) delete data.reminders;
-    return data;
+    let dirty = false;
+    if (!ALLOWED_CURRENCIES.includes(data.currency)) { data.currency = 'USD'; dirty = true; }
+    if (!ALLOWED_THEMES.includes(data.settings.theme)) { data.settings.theme = 'light'; dirty = true; }
+    if ('reminders' in data) { delete data.reminders; dirty = true; }
+    return dirty;
   }
 
   let cache = null;
@@ -76,7 +77,9 @@
         return cache;
       }
       const parsed = JSON.parse(raw);
-      cache = normalize(deepMergeDefaults(parsed, DEFAULT_DATA));
+      cache = deepMergeDefaults(parsed, DEFAULT_DATA);
+      // Persist immediately if any migration cleanup ran (e.g. dropping legacy reminders).
+      if (normalize(cache)) save();
       return cache;
     } catch (e) {
       console.error('Failed to load storage, resetting', e);
@@ -183,7 +186,7 @@
   function setSettings(patch) {
     return update((d) => {
       d.settings = { ...d.settings, ...patch };
-      normalize(d);
+      normalize(d); // ignore return; update() will save afterward
     });
   }
 
@@ -214,7 +217,8 @@
     try {
       const parsed = JSON.parse(jsonStr);
       if (!parsed || typeof parsed !== 'object') throw new Error('Invalid JSON');
-      const merged = normalize(deepMergeDefaults(parsed, DEFAULT_DATA));
+      const merged = deepMergeDefaults(parsed, DEFAULT_DATA);
+      normalize(merged); // strips legacy fields (e.g. reminders)
       cache = merged;
       save();
       return { ok: true };
@@ -234,43 +238,6 @@
       e.recurring ? 'yes' : 'no'
     ]);
     return [header.join(','), ...rows.map((r) => r.join(','))].join('\n');
-  }
-
-  // ---- Seed (one-time on first run) ----
-  function seedIfNeeded() {
-    const d = load();
-    if (d.settings.seeded) return d;
-    const today = new Date();
-    const iso = (offsetDays) => {
-      const x = new Date(today);
-      x.setDate(x.getDate() - offsetDays);
-      return x.toISOString().slice(0, 10);
-    };
-    d.dog = { name: 'Max', breed: 'Golden Retriever', ageYears: 3, weightKg: 28, photo: '' };
-    d.budgets = { food: 80, vet: 60, grooming: 40, toys: 25, meds: 30, other: 25 };
-    d.expenses = [
-      { id: uid(), amount: 24.99, category: 'food', note: 'Premium kibble 5kg', date: iso(2), recurring: false },
-      { id: uid(), amount: 45.00, category: 'vet', note: 'Routine checkup', date: iso(6), recurring: false },
-      { id: uid(), amount: 18.50, category: 'grooming', note: 'Bath & nail trim', date: iso(10), recurring: false },
-      { id: uid(), amount: 9.99, category: 'toys', note: 'Rope chew toy', date: iso(14), recurring: false },
-      { id: uid(), amount: 14.75, category: 'meds', note: 'Tick & flea drops', date: iso(20), recurring: true }
-    ];
-    d.goals = [
-      {
-        id: uid(),
-        name: 'Annual vaccinations fund',
-        target: 240,
-        saved: 90,
-        targetDate: new Date(today.getFullYear(), today.getMonth() + 3, 1).toISOString().slice(0, 10),
-        contributions: [
-          { amount: 50, date: iso(30) },
-          { amount: 40, date: iso(10) }
-        ]
-      }
-    ];
-    d.settings.seeded = true;
-    save();
-    return d;
   }
 
   global.DBPStorage = {
@@ -295,7 +262,6 @@
     exportJSON,
     importJSON,
     exportExpensesCSV,
-    seedIfNeeded,
     isStorageAvailable
   };
 })(window);

@@ -161,5 +161,5 @@
     Object.keys(charts).forEach((k) => destroy(k));
   }
 
-  global.DBPCharts = { renderCategory, renderMonthly, renderMoM, destroyAll };
+  global.DBPCharts = { renderCategory, renderMonthly, renderMoM, destroy, destroyAll };
 })(window);

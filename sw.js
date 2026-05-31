@@ -3,17 +3,22 @@
    - cache-first for shell
    - stale-while-revalidate for Chart.js CDN
 */
-const CACHE = 'dbp-cache-v3';
+const CACHE = 'dbp-cache-v6';
 const SHELL = [
   './',
   'index.html',
-  'css/styles.css',
-  'js/storage.js',
-  'js/charts.js',
-  'js/app.js',
-  'manifest.json',
-  'icons/icon-192.svg',
-  'icons/icon-512.svg'
+  'css/styles.css?v=5',
+  'js/storage.js?v=5',
+  'js/charts.js?v=5',
+  'js/app.js?v=5',
+  'manifest.json?v=5',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+  'icons/icon-maskable-192.png',
+  'icons/icon-maskable-512.png',
+  'icons/apple-touch-icon.png',
+  'icons/favicon-32.png',
+  'icons/favicon-16.png'
 ];
 
 const CHART_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
