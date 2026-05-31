@@ -1,14 +1,25 @@
-/* Storage module — single localStorage namespace, JSON backup/restore, seed data */
+/* Storage module — single localStorage namespace, JSON backup/restore */
 (function (global) {
   'use strict';
 
   const STORAGE_KEY = 'dbp_data_v1';
+  const MIGRATION_KEY = 'dbp_migration_v2';
+
+  // One-time pre-launch data wipe. Runs at most once per browser:
+  //   - first load ever: flag absent → wipe dbp_data_v1, set flag, continue with empty defaults.
+  //   - any later load:  flag present → no-op. User data is preserved forever after.
+  try {
+    if (typeof localStorage !== 'undefined' && !localStorage.getItem(MIGRATION_KEY)) {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(MIGRATION_KEY, 'done');
+    }
+  } catch (e) { /* storage may be unavailable; ignore */ }
 
   const CATEGORIES = ['food', 'vet', 'grooming', 'toys', 'meds', 'other'];
   const ALLOWED_CURRENCIES = ['USD', 'CAD', 'AUD', 'NZD', 'SGD', 'HKD', 'EUR', 'GBP'];
   const ALLOWED_THEMES = ['light', 'dark'];
 
-  // Exact shape for fresh installs — no seed values, no internal flags.
+  // Exact shape written on first load.
   const DEFAULT_DATA = {
     dog: { name: '', breed: '', ageYears: null, weightKg: null, photo: '' },
     currency: 'USD',

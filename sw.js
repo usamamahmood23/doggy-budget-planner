@@ -1,24 +1,21 @@
 /* Doggy Budget Planner — service worker
-   - precache app shell
+   - precache app shell + new icons
    - cache-first for shell
    - stale-while-revalidate for Chart.js CDN
 */
-const CACHE = 'dbp-cache-v6';
+const CACHE = 'dbp-cache-v7';
 const SHELL = [
-  './',
-  'index.html',
-  'css/styles.css?v=5',
-  'js/storage.js?v=5',
-  'js/charts.js?v=5',
-  'js/app.js?v=5',
-  'manifest.json?v=5',
-  'icons/icon-192.png',
-  'icons/icon-512.png',
-  'icons/icon-maskable-192.png',
-  'icons/icon-maskable-512.png',
-  'icons/apple-touch-icon.png',
-  'icons/favicon-32.png',
-  'icons/favicon-16.png'
+  '/',
+  '/index.html',
+  '/css/styles.css?v=7',
+  '/js/storage.js?v=7',
+  '/js/charts.js?v=7',
+  '/js/app.js?v=7',
+  '/manifest.json?v=2',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/icon-maskable-512.png',
+  '/favicon.ico'
 ];
 
 const CHART_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
@@ -71,7 +68,7 @@ self.addEventListener('fetch', (event) => {
           }
           return res;
         }).catch(() => {
-          if (req.mode === 'navigate') return caches.match('index.html');
+          if (req.mode === 'navigate') return caches.match('/index.html');
           return new Response('', { status: 504, statusText: 'Offline' });
         });
       })
